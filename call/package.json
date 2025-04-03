@@ -1,0 +1,31 @@
+{
+  "name": "ringcentral-call-automation",
+  "version": "1.0.0",
+  "description": "RingCentral call automation with OpenAI Realtime API",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [
+    "ringcentral",
+    "openai",
+    "realtime",
+    "call",
+    "automation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/websocket": "^11.0.2",
+    "@ringcentral/sdk": "^5.0.3",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.2",
+    "ringcentral-softphone": "^1.1.7",
+    "ws": "^8.18.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

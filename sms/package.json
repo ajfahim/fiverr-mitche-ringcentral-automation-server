@@ -1,0 +1,33 @@
+{
+  "name": "fiverr-mitche-ringcentral-automation-server",
+  "version": "1.0.0",
+  "description": "RingCentral automation server with OpenAI integration for handling SMS and voice calls",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start:call": "node phoneCall.js"
+  },
+  "keywords": [
+    "ringcentral",
+    "openai",
+    "automation",
+    "sms",
+    "voice"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ringcentral/sdk": "^5.0.3",
+    "@ringcentral/subscriptions": "^5.0.3",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.8",
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "openai": "^4.86.1"
+  }
+}
