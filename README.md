@@ -1,6 +1,6 @@
 # RingCentral Automation Server
 
-A comprehensive automation solution for handling RingCentral calls and SMS messages using OpenAI's Realtime API.
+A comprehensive automation solution for handling RingCentral calls and SMS messages using OpenAI's Realtime API!
 
 ## Overview
 
@@ -9,6 +9,7 @@ This project provides an automated system for managing both voice calls and SMS 
 ## Features
 
 ### Call Automation
+
 - Automated voice responses using OpenAI's Realtime API
 - Real-time speech-to-text and text-to-speech processing
 - Call transfer to appropriate departments based on customer requests
@@ -16,6 +17,7 @@ This project provides an automated system for managing both voice calls and SMS 
 - Blocked number filtering
 
 ### SMS Automation
+
 - Automated SMS responses using OpenAI
 - Conversation context management
 - Intelligent routing and escalation
@@ -41,18 +43,21 @@ Each module can be configured and run independently.
 ## Installation
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/yourusername/ringcentral-automation-server.git
    cd ringcentral-automation-server
    ```
 
 2. Install dependencies for both modules:
+
    ```
    cd call && pnpm install
    cd ../sms && pnpm install
    ```
 
 3. Configure environment variables:
+
    ```
    cp call/.env.example call/.env
    cp sms/.env.example sms/.env
@@ -113,6 +118,7 @@ pnpm dev
 ## How It Works
 
 ### Call Flow
+
 1. The application registers a softphone with RingCentral
 2. When a call is received, it's automatically answered
 3. Audio from the caller is streamed to OpenAI's Realtime API
@@ -121,6 +127,7 @@ pnpm dev
 6. If a transfer is requested or detected, the call is transferred to the appropriate department
 
 ### SMS Flow
+
 1. Incoming SMS messages are received via RingCentral webhooks
 2. Messages are processed by the OpenAI API
 3. Contextual responses are generated based on message content
@@ -130,6 +137,7 @@ pnpm dev
 ## Customization
 
 You can customize the system prompts by editing:
+
 - Call prompts: `call/prompts/call-prompt.js`
 - SMS prompts: `sms/sms-prompt.js`
 
