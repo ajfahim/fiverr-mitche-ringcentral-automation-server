@@ -62,8 +62,16 @@ platform.on(platform.events.logoutSuccess, () => {
   console.log("Logged out successfully");
 });
 
-platform.on(platform.events.refreshError, (e) => {
+platform.on(platform.events.refreshError, async (e) => {
   console.error("Token refresh failed:", e.message);
+  // Check if already logged in, if not then login
+  const loggedIn = await platform.loggedIn();
+  if (!loggedIn) {
+    initializeRingCentral().catch((error) => {
+      console.error("Failed to initialize RingCentral:", error.message);
+      process.exit(1);
+    });
+  }
 });
 
 const subscriptions = new Subscriptions({
