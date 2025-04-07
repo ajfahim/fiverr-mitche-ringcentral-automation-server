@@ -164,6 +164,14 @@ export class PhoneEngine {
     let sessionEstablished = false;
     let audioPacketCount = 0;
     let audioDeltaCount = 0;
+    
+    // Enhanced audio buffer for jitter reduction
+    activeCall.audioBuffer = [];
+    activeCall.isPlayingAudio = false;
+    activeCall.audioBufferSize = 5; // Increased buffer size for smoother playback
+    activeCall.audioPlaybackInterval = null;
+    activeCall.lastPacketTime = Date.now();
+    activeCall.packetGapThreshold = 100; // ms threshold to detect gaps in audio
 
     // Handle WebSocket open
     openAIWs.on("open", () => {
@@ -263,11 +271,32 @@ export class PhoneEngine {
         if (response.type === "response.audio.delta") {
           audioDeltaCount++;
           console.log(
-            `Received audio from OpenAI (packet #${audioDeltaCount}), streaming to caller`
+            `Received audio from OpenAI (packet #${audioDeltaCount}), adding to buffer`
           );
 
           const audioBuffer = Buffer.from(response.delta, "base64");
-          activeCall.callSession.streamAudio(audioBuffer);
+          
+          try {
+            // Concatenate small packets if they arrive too quickly
+            const now = Date.now();
+            const timeSinceLastPacket = now - activeCall.lastPacketTime;
+            
+            // Add to jitter buffer with packet size optimization
+            if (timeSinceLastPacket < 10 && activeCall.audioBuffer.length > 0 && audioBuffer.length < 160) {
+              // For very small packets arriving rapidly, combine them with the previous packet
+              const lastBuffer = activeCall.audioBuffer[activeCall.audioBuffer.length - 1];
+              const combinedBuffer = Buffer.concat([lastBuffer, audioBuffer]);
+              activeCall.audioBuffer[activeCall.audioBuffer.length - 1] = combinedBuffer;
+              console.log(`Combined small audio packet (${audioBuffer.length} bytes) with previous packet`);
+            } else {
+              activeCall.audioBuffer.push(audioBuffer);
+            }
+            
+            // Start audio playback if not already playing
+            this.processAudioBuffer(activeCall);
+          } catch (error) {
+            console.error("Error processing audio packet:", error);
+          }
         }
 
         // Handle text response from OpenAI (for logging and detecting transfer requests)
@@ -496,6 +525,12 @@ export class PhoneEngine {
     ) {
       activeCall.openAIWs.close();
     }
+    
+    // Clear any audio playback interval
+    if (activeCall.audioPlaybackInterval) {
+      clearInterval(activeCall.audioPlaybackInterval);
+      activeCall.audioPlaybackInterval = null;
+    }
 
     // Remove from active calls
     this.activeCalls.delete(activeCall.id);
@@ -505,6 +540,71 @@ export class PhoneEngine {
 
   isBlockedCaller(fromNumber) {
     return BLOCKED_NUMBERS.includes(fromNumber);
+  }
+
+  processAudioBuffer(activeCall) {
+    const now = Date.now();
+    const timeSinceLastPacket = now - activeCall.lastPacketTime;
+    
+    // Update last packet time
+    activeCall.lastPacketTime = now;
+    
+    // If already playing audio, just let the buffer accumulate
+    if (activeCall.isPlayingAudio) {
+      return;
+    }
+    
+    // Adaptive buffer size based on network conditions
+    // If packets are arriving with large gaps, increase buffer size
+    if (timeSinceLastPacket > activeCall.packetGapThreshold && activeCall.audioBufferSize < 10) {
+      activeCall.audioBufferSize += 1;
+      console.log(`Increasing buffer size to ${activeCall.audioBufferSize} due to packet delay of ${timeSinceLastPacket}ms`);
+    }
+    
+    // If we have enough audio in the buffer or it's been a while since last packet, start playback
+    if (activeCall.audioBuffer.length >= activeCall.audioBufferSize || 
+        (activeCall.audioBuffer.length > 0 && timeSinceLastPacket > 500)) {
+      
+      // Mark as playing
+      activeCall.isPlayingAudio = true;
+      
+      // Create a consistent playback interval with dynamic timing
+      if (!activeCall.audioPlaybackInterval) {
+        // Calculate optimal playback interval based on buffer size
+        // This helps balance between responsiveness and smoothness
+        const playbackInterval = Math.max(15, Math.min(30, 20 + (activeCall.audioBufferSize - 5) * 2));
+        
+        console.log(`Starting audio playback with ${activeCall.audioBuffer.length} packets at ${playbackInterval}ms intervals`);
+        
+        activeCall.audioPlaybackInterval = setInterval(() => {
+          if (activeCall.audioBuffer.length > 0) {
+            try {
+              // Get the next audio packet
+              const audioPacket = activeCall.audioBuffer.shift();
+              
+              // Stream to caller with error handling
+              activeCall.callSession.streamAudio(audioPacket);
+              
+              // Log periodically to avoid console spam
+              if (activeCall.audioBuffer.length % 5 === 0) {
+                console.log(`Playing audio packet, ${activeCall.audioBuffer.length} packets remaining in buffer`);
+              }
+              
+              // Dynamically adjust buffer size if we have too many packets
+              if (activeCall.audioBuffer.length > 15 && activeCall.audioBufferSize > 3) {
+                activeCall.audioBufferSize -= 1;
+                console.log(`Decreasing buffer size to ${activeCall.audioBufferSize} due to buffer overflow`);
+              }
+            } catch (error) {
+              console.error("Error streaming audio packet:", error);
+            }
+          } else {
+            // No more audio in buffer, mark as not playing but don't clear interval yet
+            activeCall.isPlayingAudio = false;
+          }
+        }, playbackInterval);
+      }
+    }
   }
 
   async readPhoneSettings() {
