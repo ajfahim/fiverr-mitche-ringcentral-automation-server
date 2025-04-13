@@ -164,14 +164,16 @@ export class PhoneEngine {
     let sessionEstablished = false;
     let audioPacketCount = 0;
     let audioDeltaCount = 0;
-    
+
     // Enhanced audio buffer for jitter reduction
     activeCall.audioBuffer = [];
     activeCall.isPlayingAudio = false;
-    activeCall.audioBufferSize = 5; // Increased buffer size for smoother playback
+    activeCall.audioBufferSize = 8; // Increased buffer size for smoother playback
     activeCall.audioPlaybackInterval = null;
     activeCall.lastPacketTime = Date.now();
-    activeCall.packetGapThreshold = 100; // ms threshold to detect gaps in audio
+    activeCall.packetGapThreshold = 80; // Reduced threshold to respond faster to network changes
+    activeCall.audioStatsReported = 0; // Track for periodic reporting
+    activeCall.userIsSpeaking = false; // Track if user is currently speaking
 
     // Handle WebSocket open
     openAIWs.on("open", () => {
@@ -183,7 +185,14 @@ export class PhoneEngine {
           const sessionUpdate = {
             type: "session.update",
             session: {
-              turn_detection: { type: "server_vad" },
+              turn_detection: {
+                type: "server_vad",
+                threshold: 0.5, // Default sensitivity (0-1)
+                prefix_padding_ms: 100, // Reduced from 300 for faster response
+                silence_duration_ms: 100, // Reduced from 200 to detect silence faster
+                create_response: true, // Create a response after detecting speech
+                interrupt_response: true, // Allow interrupting the assistant response
+              },
               input_audio_format: "g711_ulaw",
               output_audio_format: "g711_ulaw",
               input_audio_transcription: {
@@ -218,6 +227,9 @@ export class PhoneEngine {
           // Verify the audio formats
           console.log(
             `Input format: ${response.session.input_audio_format}, Output format: ${response.session.output_audio_format}`
+          );
+          console.log(
+            `Session established: ${JSON.stringify(response.session, null, 2)}`
           );
           sessionEstablished = true;
 
@@ -275,23 +287,70 @@ export class PhoneEngine {
           );
 
           const audioBuffer = Buffer.from(response.delta, "base64");
-          
+
           try {
             // Concatenate small packets if they arrive too quickly
             const now = Date.now();
             const timeSinceLastPacket = now - activeCall.lastPacketTime;
-            
-            // Add to jitter buffer with packet size optimization
-            if (timeSinceLastPacket < 10 && activeCall.audioBuffer.length > 0 && audioBuffer.length < 160) {
-              // For very small packets arriving rapidly, combine them with the previous packet
-              const lastBuffer = activeCall.audioBuffer[activeCall.audioBuffer.length - 1];
-              const combinedBuffer = Buffer.concat([lastBuffer, audioBuffer]);
-              activeCall.audioBuffer[activeCall.audioBuffer.length - 1] = combinedBuffer;
-              console.log(`Combined small audio packet (${audioBuffer.length} bytes) with previous packet`);
-            } else {
+
+            // G.711 uses 8kHz sampling rate, which is 160 bytes per 20ms frame
+            // Instead of combining based on arbitrary timing, respect G.711 frame boundaries
+            // Only normalize packets to proper G.711 frame sizes
+
+            // If this is a standard G.711 packet (should be around 160 bytes), add it directly
+            if (audioBuffer.length >= 80 && audioBuffer.length <= 240) {
+              activeCall.audioBuffer.push(audioBuffer);
+
+              // Log packet size occasionally for monitoring
+              if (audioDeltaCount % 20 === 0) {
+                console.log(
+                  `Added normal G.711 packet: ${audioBuffer.length} bytes`
+                );
+              }
+            }
+            // If it's a very small packet, try to combine to match G.711 frame size
+            else if (
+              audioBuffer.length < 80 &&
+              activeCall.audioBuffer.length > 0
+            ) {
+              const lastBuffer =
+                activeCall.audioBuffer[activeCall.audioBuffer.length - 1];
+
+              // Only combine if it would create a more standard sized packet
+              if (lastBuffer.length + audioBuffer.length <= 240) {
+                const combinedBuffer = Buffer.concat([lastBuffer, audioBuffer]);
+                activeCall.audioBuffer[activeCall.audioBuffer.length - 1] =
+                  combinedBuffer;
+                console.log(
+                  `Combined small audio packet (${audioBuffer.length} bytes) with previous packet, new size: ${combinedBuffer.length} bytes`
+                );
+              } else {
+                // If combining would make it too large, add as separate packet
+                activeCall.audioBuffer.push(audioBuffer);
+                console.log(
+                  `Added small packet separately: ${audioBuffer.length} bytes`
+                );
+              }
+            }
+            // If it's a large packet, split it into standard-sized chunks
+            else if (audioBuffer.length > 240) {
+              console.log(
+                `Splitting large packet of ${audioBuffer.length} bytes into standard frames`
+              );
+
+              // Split into ~160 byte chunks to match G.711 frame size
+              const chunkSize = 160;
+              for (let i = 0; i < audioBuffer.length; i += chunkSize) {
+                const end = Math.min(i + chunkSize, audioBuffer.length);
+                const chunk = audioBuffer.subarray(i, end);
+                activeCall.audioBuffer.push(chunk);
+              }
+            }
+            // Anything else just add normally
+            else {
               activeCall.audioBuffer.push(audioBuffer);
             }
-            
+
             // Start audio playback if not already playing
             this.processAudioBuffer(activeCall);
           } catch (error) {
@@ -301,7 +360,7 @@ export class PhoneEngine {
 
         // Handle text response from OpenAI (for logging and detecting transfer requests)
         if (response.type === "response.audio_transcript.done") {
-          console.log("AI:", response.transcript);
+          console.log("==============AI==============: ", response.transcript);
           // Check for transfer requests in the text
           const text = response.transcript;
           if (!activeCall.transferRequested && this.shouldTransferCall(text)) {
@@ -315,11 +374,44 @@ export class PhoneEngine {
           }
         }
 
+        // Handle speech detection events for interruption
+        if (response.type === "input_audio_buffer.speech_started") {
+          console.log("User started speaking, stopping AI audio playback");
+          activeCall.userIsSpeaking = true;
+          // Clear the audio playback interval to stop playing AI audio
+          if (activeCall.audioPlaybackInterval) {
+            clearInterval(activeCall.audioPlaybackInterval);
+            activeCall.audioPlaybackInterval = null;
+          }
+          // Reset audio buffer and mark as not playing
+          activeCall.audioBuffer = [];
+          activeCall.isPlayingAudio = false;
+
+          // Send cancel signal to OpenAI to stop generating audio
+          try {
+            const cancelMessage = {
+              type: "response.cancel"
+            };
+            openAIWs.send(JSON.stringify(cancelMessage));
+            console.log("Sent response cancel signal to OpenAI");
+          } catch (error) {
+            console.error("Error sending interrupt signal:", error);
+          }
+        }
+
+        // Log when speech stops
+        if (response.type === "input_audio_buffer.speech_stopped") {
+          console.log("User stopped speaking");
+          activeCall.userIsSpeaking = false;
+        }
+
         if (
           response.type ===
           "conversation.item.input_audio_transcription.completed"
         ) {
-          console.log(`User: ${response.transcript}`);
+          console.log(
+            `==============User===============: ${response.transcript}`
+          );
         }
 
         // Handle error events
@@ -525,7 +617,7 @@ export class PhoneEngine {
     ) {
       activeCall.openAIWs.close();
     }
-    
+
     // Clear any audio playback interval
     if (activeCall.audioPlaybackInterval) {
       clearInterval(activeCall.audioPlaybackInterval);
@@ -545,55 +637,77 @@ export class PhoneEngine {
   processAudioBuffer(activeCall) {
     const now = Date.now();
     const timeSinceLastPacket = now - activeCall.lastPacketTime;
-    
+
     // Update last packet time
     activeCall.lastPacketTime = now;
-    
+
     // If already playing audio, just let the buffer accumulate
     if (activeCall.isPlayingAudio) {
       return;
     }
-    
+
     // Adaptive buffer size based on network conditions
     // If packets are arriving with large gaps, increase buffer size
-    if (timeSinceLastPacket > activeCall.packetGapThreshold && activeCall.audioBufferSize < 10) {
+    if (
+      timeSinceLastPacket > activeCall.packetGapThreshold &&
+      activeCall.audioBufferSize < 12
+    ) {
       activeCall.audioBufferSize += 1;
-      console.log(`Increasing buffer size to ${activeCall.audioBufferSize} due to packet delay of ${timeSinceLastPacket}ms`);
+      console.log(
+        `Increasing buffer size to ${activeCall.audioBufferSize} due to packet delay of ${timeSinceLastPacket}ms`
+      );
     }
-    
+
     // If we have enough audio in the buffer or it's been a while since last packet, start playback
-    if (activeCall.audioBuffer.length >= activeCall.audioBufferSize || 
-        (activeCall.audioBuffer.length > 0 && timeSinceLastPacket > 500)) {
-      
+    if (
+      activeCall.audioBuffer.length >= activeCall.audioBufferSize ||
+      (activeCall.audioBuffer.length > 0 && timeSinceLastPacket > 500)
+    ) {
       // Mark as playing
       activeCall.isPlayingAudio = true;
-      
+
       // Create a consistent playback interval with dynamic timing
       if (!activeCall.audioPlaybackInterval) {
-        // Calculate optimal playback interval based on buffer size
-        // This helps balance between responsiveness and smoothness
-        const playbackInterval = Math.max(15, Math.min(30, 20 + (activeCall.audioBufferSize - 5) * 2));
-        
-        console.log(`Starting audio playback with ${activeCall.audioBuffer.length} packets at ${playbackInterval}ms intervals`);
-        
+        // Fixed 20ms playback interval for G.711 standards (8000 samples per second = 160 samples per 20ms)
+        // This maintains proper timing for standard PCMU frames
+        const playbackInterval = 20; // Fixed at 20ms for G.711 standard timing
+
+        console.log(
+          `Starting audio playback with ${activeCall.audioBuffer.length} packets at ${playbackInterval}ms intervals`
+        );
+
         activeCall.audioPlaybackInterval = setInterval(() => {
           if (activeCall.audioBuffer.length > 0) {
             try {
+              // If user is currently speaking (detected by OpenAI), stop playing audio
+              if (activeCall.userIsSpeaking) {
+                console.log("User is speaking, pausing AI audio playback");
+                return;
+              }
+
               // Get the next audio packet
               const audioPacket = activeCall.audioBuffer.shift();
-              
-              // Stream to caller with error handling
-              activeCall.callSession.streamAudio(audioPacket);
-              
-              // Log periodically to avoid console spam
-              if (activeCall.audioBuffer.length % 5 === 0) {
-                console.log(`Playing audio packet, ${activeCall.audioBuffer.length} packets remaining in buffer`);
+
+              // Validate packet size - G.711 standard expects 160 bytes for 20ms of audio at 8kHz
+              // If packet is much larger or smaller, it could cause timing issues
+              if (audioPacket.length > 0) {
+                // Stream to caller with error handling
+                activeCall.callSession.streamAudio(audioPacket);
+
+                // No logging of individual audio packets to reduce console noise
+              } else {
+                console.warn("Skipping empty audio packet");
               }
-              
+
               // Dynamically adjust buffer size if we have too many packets
-              if (activeCall.audioBuffer.length > 15 && activeCall.audioBufferSize > 3) {
+              if (
+                activeCall.audioBuffer.length > 15 &&
+                activeCall.audioBufferSize > 5
+              ) {
                 activeCall.audioBufferSize -= 1;
-                console.log(`Decreasing buffer size to ${activeCall.audioBufferSize} due to buffer overflow`);
+                console.log(
+                  `Decreasing buffer size to ${activeCall.audioBufferSize} due to buffer overflow`
+                );
               }
             } catch (error) {
               console.error("Error streaming audio packet:", error);

@@ -1,14 +1,13 @@
-import 'dotenv/config';
-import Fastify from 'fastify';
-import fastifyWebsocket from '@fastify/websocket';
-import { PhoneEngine } from './phone-engine.js';
-import { CALL_PROMPT } from './prompts/call-prompt.js';
+import fastifyWebsocket from "@fastify/websocket";
+import "dotenv/config";
+import Fastify from "fastify";
+import { PhoneEngine } from "./phone-engine.js";
 
 const PORT = process.env.PORT || 3000;
 
 // Initialize the server
 const fastify = Fastify({
-  logger: true
+  logger: true,
 });
 
 // Register WebSocket plugin
@@ -21,14 +20,14 @@ const phoneEngine = new PhoneEngine();
 await phoneEngine.initialize();
 
 // Health check route
-fastify.get('/', async (request, reply) => {
-  return { status: 'RingCentral Call Automation is running' };
+fastify.get("/", async (request, reply) => {
+  return { status: "RingCentral Call Automation is running" };
 });
 
 // Start the server
 const start = async () => {
   try {
-    await fastify.listen({ port: PORT, host: '0.0.0.0' });
+    await fastify.listen({ port: PORT, host: "0.0.0.0" });
     console.log(`Server is running on port ${PORT}`);
   } catch (err) {
     fastify.log.error(err);
