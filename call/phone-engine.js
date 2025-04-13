@@ -228,9 +228,7 @@ export class PhoneEngine {
           console.log(
             `Input format: ${response.session.input_audio_format}, Output format: ${response.session.output_audio_format}`
           );
-          console.log(
-            `Session established: ${JSON.stringify(response.session, null, 2)}`
-          );
+
           sessionEstablished = true;
 
           // Send a welcome message to start the conversation
@@ -390,7 +388,7 @@ export class PhoneEngine {
           // Send cancel signal to OpenAI to stop generating audio
           try {
             const cancelMessage = {
-              type: "response.cancel"
+              type: "response.cancel",
             };
             openAIWs.send(JSON.stringify(cancelMessage));
             console.log("Sent response cancel signal to OpenAI");
