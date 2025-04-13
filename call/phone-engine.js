@@ -151,7 +151,7 @@ export class PhoneEngine {
     console.log("Setting up OpenAI Realtime connection...");
     // Create WebSocket connection to OpenAI
     const openAIWs = new WebSocket(
-      "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
+      "wss://api.openai.com/v1/realtime?model=gpt-4o-mini-realtime-preview-2024-12-17",
       {
         headers: {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
