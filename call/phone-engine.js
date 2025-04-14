@@ -71,17 +71,60 @@ export class PhoneEngine {
 
   async login() {
     try {
-      const loggedIn = await this.platform.loggedIn();
-      if (!loggedIn) {
-        await this.platform.login({ jwt: process.env.RINGCENTRAL_JWT });
-        console.log("Logged in to RingCentral");
-      } else {
-        console.log("Already logged in to RingCentral");
+      // First check if we already have a valid token
+      if (this.platform.auth().accessTokenValid()) {
+        console.log("Access token is valid, no need to login again");
+        return;
       }
-      return true;
-    } catch (error) {
-      console.error("Failed to login to RingCentral:", error);
-      return false;
+
+      // Check if we have a refresh token and it's not expired
+      const auth = this.platform.auth();
+      if (auth.refreshToken() && !auth.refreshTokenExpired()) {
+        console.log("Attempting to refresh token...");
+        try {
+          await this.platform.refresh();
+          console.log("Token refreshed successfully");
+          this.loginAttempts = 0;
+          return;
+        } catch (refreshError) {
+          console.error("Failed to refresh token, will try full login:", refreshError);
+          // Continue to full login below
+        }
+      }
+
+      // If we reach here, we need to do a full login with JWT
+      console.log("Performing full login with JWT...");
+      if (!process.env.RINGCENTRAL_JWT) {
+        throw new Error("RINGCENTRAL_JWT environment variable is not set");
+      }
+      
+      await this.platform.login({ jwt: process.env.RINGCENTRAL_JWT });
+      console.log("Successfully logged in to RingCentral using JWT");
+      this.loginAttempts = 0;
+    } catch (e) {
+      this.loginAttempts = (this.loginAttempts || 0) + 1;
+      console.error(`Login error (attempt ${this.loginAttempts}):`, e);
+      
+      if (this.loginAttempts <= 3) {
+        console.log("Retrying login after error...");
+        try {
+          // Implement exponential backoff for retries
+          const backoffTime = Math.pow(2, this.loginAttempts) * 1000; // 2s, 4s, 8s
+          console.log(`Waiting ${backoffTime}ms before retry`);
+          await new Promise(resolve => setTimeout(resolve, backoffTime));
+          
+          // Try full login again with JWT
+          await this.platform.login({ jwt: process.env.RINGCENTRAL_JWT });
+          console.log("Successfully logged in on retry");
+          this.loginAttempts = 0;
+        } catch (retryError) {
+          console.error("Login retry failed:", retryError);
+          throw retryError;
+        }
+      } else {
+        console.error("Max login attempts reached, giving up");
+        throw e;
+      }
     }
   }
 
@@ -209,8 +252,26 @@ export class PhoneEngine {
           openAIWs.send(JSON.stringify(sessionUpdate));
         } catch (error) {
           console.error("Error sending session update:", error);
+          // Attempt to reset the connection
+          this.resetOpenAIConnection(activeCall, "Error sending session update");
         }
       }, 250);
+    });
+
+    // Handle WebSocket errors
+    openAIWs.on("error", (error) => {
+      console.error(`OpenAI WebSocket error for call ${activeCall.id}:`, error);
+      this.resetOpenAIConnection(activeCall, "WebSocket error");
+    });
+
+    // Handle WebSocket close events
+    openAIWs.on("close", (code, reason) => {
+      console.log(`OpenAI WebSocket closed for call ${activeCall.id} with code: ${code}, reason: ${reason}`);
+      
+      // Only auto reconnect for unexpected closure
+      if (code !== 1000) { // 1000 is normal closure
+        this.resetOpenAIConnection(activeCall, `Unexpected WebSocket close: ${code}`);
+      }
     });
 
     // Handle messages from OpenAI
@@ -613,7 +674,11 @@ export class PhoneEngine {
       activeCall.openAIWs &&
       activeCall.openAIWs.readyState === WebSocket.OPEN
     ) {
-      activeCall.openAIWs.close();
+      try {
+        activeCall.openAIWs.close(1000, "Call ended normally");
+      } catch (err) {
+        console.error(`Error closing WebSocket for call ${activeCall.id}:`, err);
+      }
     }
 
     // Clear any audio playback interval
@@ -630,6 +695,79 @@ export class PhoneEngine {
 
   isBlockedCaller(fromNumber) {
     return BLOCKED_NUMBERS.includes(fromNumber);
+  }
+
+  resetOpenAIConnection(activeCall, reason) {
+    console.log(`Resetting OpenAI connection for call ${activeCall.id}. Reason: ${reason}`);
+    
+    // Track reconnection attempts
+    if (!activeCall.reconnectAttempts) {
+      activeCall.reconnectAttempts = 0;
+    }
+    
+    // Implement exponential backoff for reconnection attempts
+    if (activeCall.reconnectAttempts >= 3) {
+      console.error(`Too many reconnection attempts (${activeCall.reconnectAttempts}) for call ${activeCall.id}, giving up`);
+      
+      // Inform caller about the technical difficulties
+      try {
+        const errorMessage = "I'm sorry, but we're experiencing some technical difficulties with this call. Please try again later.";
+        const errorMessageBuffer = Buffer.from(errorMessage);
+        activeCall.callSession.streamAudio(errorMessageBuffer);
+      } catch (err) {
+        console.error("Error sending technical difficulties message:", err);
+      }
+      
+      // Clean up the call
+      setTimeout(() => this.cleanupCall(activeCall), 5000);
+      return;
+    }
+    
+    // Close existing connection if it's still open
+    if (activeCall.openAIWs && activeCall.openAIWs.readyState !== WebSocket.CLOSED) {
+      try {
+        activeCall.openAIWs.close(1000, "Reconnecting");
+      } catch (err) {
+        console.error("Error closing WebSocket for reconnection:", err);
+      }
+    }
+    
+    // Clear any existing audio playback
+    if (activeCall.audioPlaybackInterval) {
+      clearInterval(activeCall.audioPlaybackInterval);
+      activeCall.audioPlaybackInterval = null;
+    }
+    
+    // Reset audio buffer
+    activeCall.audioBuffer = [];
+    activeCall.isPlayingAudio = false;
+    
+    // Increment reconnection attempts
+    activeCall.reconnectAttempts++;
+    
+    // Calculate backoff time (2^attempt * 1000ms)
+    const backoffTime = Math.min(Math.pow(2, activeCall.reconnectAttempts) * 1000, 10000);
+    console.log(`Reconnecting in ${backoffTime}ms (attempt ${activeCall.reconnectAttempts})`);
+    
+    // Let the caller know we're reconnecting
+    try {
+      const reconnectMessage = "Please hold while I reconnect to our system...";
+      const reconnectMessageBuffer = Buffer.from(reconnectMessage);
+      activeCall.callSession.streamAudio(reconnectMessageBuffer);
+    } catch (err) {
+      console.error("Error sending reconnect message:", err);
+    }
+    
+    // Attempt to reconnect after backoff time
+    setTimeout(() => {
+      try {
+        console.log(`Attempting to reconnect OpenAI WebSocket for call ${activeCall.id}`);
+        this.setupOpenAIRealtime(activeCall);
+      } catch (err) {
+        console.error("Error in reconnection attempt:", err);
+        // If reconnection fails, we'll try again recursively via the error handlers
+      }
+    }, backoffTime);
   }
 
   processAudioBuffer(activeCall) {
@@ -721,18 +859,31 @@ export class PhoneEngine {
 
   async readPhoneSettings() {
     try {
-      await this.login();
+      // Ensure we have a fresh login before attempting to get phone settings
+      console.log("Performing full login with JWT before fetching phone settings...");
+      if (!process.env.RINGCENTRAL_JWT) {
+        throw new Error("RINGCENTRAL_JWT environment variable is not set");
+      }
+      
+      await this.platform.login({ jwt: process.env.RINGCENTRAL_JWT });
+      console.log("Login successful, now fetching phone settings");
+      
+      // Get device information
       const resp = await this.platform.get(
         "/restapi/v1.0/account/~/extension/~/device"
       );
       const jsonObj = await resp.json();
+      console.log(`Found ${jsonObj.records.length} devices`);
 
       for (const device of jsonObj.records) {
+        console.log(`Checking device: ${device.name} (${device.id})`);
         if (device.name === "My SIP Phone") {
+          console.log("Found My SIP Phone device, fetching SIP info");
           const sipInfoResp = await this.platform.get(
             `/restapi/v1.0/account/~/device/${device.id}/sip-info`
           );
           const ivrPhone = await sipInfoResp.json();
+          console.log("Successfully retrieved SIP phone settings");
           return {
             username: ivrPhone.userName,
             password: ivrPhone.password,
@@ -742,10 +893,20 @@ export class PhoneEngine {
         }
       }
 
-      console.error("No My SIP Phone device found");
+      console.error("No My SIP Phone device found in account");
       return null;
     } catch (error) {
       console.error("Failed to read phone settings:", error);
+      // Add fallback for testing environments
+      if (process.env.NODE_ENV === "development" || process.env.MOCK_PHONE_SETTINGS === "true") {
+        console.log("Using mock phone settings for development");
+        return {
+          username: "mockuser",
+          password: "mockpassword",
+          authorizationId: "mockauth",
+          codec: "PCMU/8000",
+        };
+      }
       return null;
     }
   }
