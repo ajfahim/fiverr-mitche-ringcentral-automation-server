@@ -129,63 +129,35 @@ export class PhoneEngine {
   }
 
   setupCallHandler() {
-    this.softphone.on("incomingcall", (session) => {
+    this.softphone.on("invite", async (sipMessage) => {
       console.log("Incoming call detected");
 
-      // Create a unique ID for this call
-      const callId = `call_${Date.now()}`;
-      const fromNumber = session.remoteIdentity.uri.user;
+      // Extract caller number from SIP message
+      const header = sipMessage.headers["Contact"];
+      const fromNumber = header.substring(5, header.indexOf("@"));
       console.log(`Call from: ${fromNumber}`);
 
-      // Check if this is a blocked caller
+      // Check if caller is blocked
       if (this.isBlockedCaller(fromNumber)) {
-        console.log(`Blocked caller: ${fromNumber}, rejecting call`);
-        session.reject();
+        console.log(`Blocked caller ${fromNumber} - rejecting call`);
         return;
       }
 
       // Answer the call
-      session.accept();
+      const callSession = await this.softphone.answer(sipMessage);
       console.log("Call answered");
 
-      // Create an active call record
-      const activeCall = {
-        id: callId,
-        callSession: session,
-        fromNumber: fromNumber,
-        telSessionId: null,
-        partyId: null,
-        transferRequested: false,
-        transferTarget: null,
-        audioBuffer: [],
-        reconnectAttempts: 0,
-      };
+      // Create active call object
+      const activeCall = this.createActiveCall(callSession, fromNumber);
 
-      // Add to active calls map
-      this.activeCalls.set(callId, activeCall);
-
-      // Set up event handlers for this call
-      session.on("bye", () => {
-        console.log(`Call ended: ${callId}`);
-        this.cleanupCall(activeCall);
-      });
-
-      session.on("failed", () => {
-        console.log(`Call failed: ${callId}`);
-        this.cleanupCall(activeCall);
-      });
-
-      session.on("dtmf", (digit) => {
-        this.handleDTMF(activeCall, digit);
-      });
-
-      // Add debug logging for audio setup
-      console.log(`Setting up audio event handlers for call ${callId}`);
+      // Add debug logging for audio
+      console.log(`Setting up audio debug for call ${activeCall.id}`);
       let lastAudioDebugTime = Date.now();
       let audioBufferCount = 0;
       let emptyBufferCount = 0;
-
-      session.on("audioBuffer", (buffer) => {
+      
+      // Track audio buffers
+      callSession.on("audioBuffer", (buffer) => {
         // Debug logging for audio buffers
         audioBufferCount++;
         const now = Date.now();
@@ -195,24 +167,23 @@ export class PhoneEngine {
           emptyBufferCount++;
           // Log every 100 empty buffers
           if (emptyBufferCount % 100 === 0) {
-            console.log(`Received ${emptyBufferCount} empty audio buffers`);
+            console.log(`Received ${emptyBufferCount} empty audio buffers for call ${activeCall.id}`);
           }
           return; // Skip processing empty buffers
         }
 
         // Log audio stats every few seconds
         if (now - lastAudioDebugTime > 5000) {
-          console.log(`[AUDIO DEBUG] Call ${callId}: Received ${audioBufferCount} audio buffers in last 5s. Current buffer size: ${buffer.length} bytes`);
+          console.log(`[AUDIO DEBUG] Call ${activeCall.id}: Received ${audioBufferCount} audio buffers in last 5s. Current buffer size: ${buffer.length} bytes`);
           lastAudioDebugTime = now;
           audioBufferCount = 0;
         }
 
-        // Detect audio from the caller and forward it to OpenAI
+        // Process audio for OpenAI
         if (
           activeCall.openAIWs &&
           activeCall.openAIWs.readyState === WebSocket.OPEN
         ) {
-          // Send audio directly to OpenAI - already in G.711 ulaw format
           try {
             const base64Audio = buffer.toString("base64");
             const audioMessage = {
@@ -234,23 +205,35 @@ export class PhoneEngine {
             
             // Log every 100 packets for debugging
             if (activeCall.packetCount % 100 === 0) {
-              console.log(`Sent ${activeCall.packetCount} audio packets to OpenAI`);
+              console.log(`Sent ${activeCall.packetCount} audio packets to OpenAI for call ${activeCall.id}`);
             }
           } catch (error) {
-            console.error("Error sending audio to OpenAI:", error);
+            console.error(`Error sending audio to OpenAI for call ${activeCall.id}:`, error);
           }
         } else {
           // Log WebSocket issues
           if (!activeCall.openAIWs) {
-            console.log(`[ERROR] OpenAI WebSocket not initialized for call ${callId}`);
+            console.log(`[ERROR] OpenAI WebSocket not initialized for call ${activeCall.id}`);
           } else {
-            console.log(`[ERROR] OpenAI WebSocket not open for call ${callId}. State: ${activeCall.openAIWs.readyState}`);
+            console.log(`[ERROR] OpenAI WebSocket not open for call ${activeCall.id}. State: ${activeCall.openAIWs.readyState}`);
           }
         }
       });
-
-      // Set up the OpenAI connection for this call
+      
+      // Set up OpenAI Realtime connection
       this.setupOpenAIRealtime(activeCall);
+
+      // Set up DTMF handler
+      callSession.on("dtmf", (digit) => {
+        console.log(`DTMF received: ${digit}`);
+        this.handleDTMF(activeCall, digit);
+      });
+
+      // Handle call end
+      callSession.once("disposed", () => {
+        console.log(`Call ended: ${activeCall.id}`);
+        this.cleanupCall(activeCall);
+      });
     });
   }
 
