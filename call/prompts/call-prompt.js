@@ -10,56 +10,92 @@ Avoid redirecting people to the website or phone numbers unless it's absolutely 
 
 ---
 
-**Tours & Pricing Overview (Answer questions like “how much,” “what’s the price,” or “what’s included” or “what’s the duration”):**
+Tours & Pricing Overview (Answer questions like “how much,” “what’s the price,” or “what’s included” or “what’s the duration”):
 
-🟡 **Jet Ski & Snorkeling Tours**
-1. *1-Hour Shipwreck Tour*  
-   - $220 per Jet Ski (1 or 2 people)  
-   - Explore the La Famille Express shipwreck and snorkel nearby  
-   - Includes gear, snacks, and drinks  
-   - Up to 7 Jet Skis per group
+Horseback Riding Tours
 
-2. *4-Hour Shipwreck + Iguana Island Tour*  
-   - $350 per Jet Ski  
-   - Includes shipwreck, snorkeling, and visit to Iguana Island  
-   - Gear, snacks, drinks, and hotel transport included
+1. Private Ride N Swim  
+   - Schedule:  
+     - Sunday–Thursday: 9:00 AM & 11:00 AM  
+     - Friday: 11:00 AM & 12:30 PM  
+   - Duration: 1 hour  
+   - Group Size: Max 13 participants (2 groups only per schedule)  
+   - Rate: $326.29 per person (includes taxes and booking fees)  
+   - For: Beginners, families, riders with disabilities, advanced riders  
+   - Cantering Allowed: Yes  
+   - Location: On the beach, near the Conch Shack (10–15 min from Grace Bay)
 
-📍 Meet at: 13B Gumbo Limbo Drive. From Grace Bay, take Leeward Highway, left on Discovery Bay, second left on Gumbo Limbo, and it's 300 meters ahead at Gate 13B.
+2. Regular Ride N Swim  
+   - Schedule:  
+     - Standard Time: 2:00 PM  
+     - Daylight Saving Time:  
+       - Sunday–Thursday: 3:30 PM  
+       - Friday: 9:00 AM  
+   - Duration: 1 hour  
+   - Group Size: Up to 13 pax (mixed groups)  
+   - Rate: $181.27 per person (includes taxes and booking fees)  
+   - Kid Limit: Max 4 kids per tour  
+   - Galloping/Cantering: Not allowed
 
-🟡 **Safari & Snorkeling Tour**
-- *4-Hour Off-Road Safari Adventure*  
-  - $150 per adult, $75 per child  
-  - Guided by locals, covers scenic stops, beaches, mangroves, and snorkeling  
-  - Gear, drinks, and hotel pickup included  
-  - Group sizes: 2 to 32 people
+3. Sunset Ride N Swim  
+   - Schedule:  
+     - Standard Time: 4:30 PM  
+     - Daylight Saving Time: 6:00 PM (Sunday–Thursday only)  
+   - Duration: 1 hour  
+   - Group Size: Up to 13 pax (mixed groups)  
+   - Rate: $205.44 per person (includes taxes and booking fees)  
+   - View the sunset during the ride  
+   - Same rules as Regular Ride N Swim
 
-🟡 **Horseback Riding on the Beach & in the Ocean**
-1. *Regular Ride N Swim* – $150 per person  
-2. *Sunset Ride N Swim* – $170 per person  
-3. *Private Ride N Swim* – $270 per person (minimum 2 riders)  
-- Each ride is ~1 hour  
-- Ride along the beach and into the ocean  
-- Meet at the beach near the Conch Shack (10–15 min from Grace Bay)
+All Horseback Rides Include:
+- Transportation (from select hotels/resorts)
+- Water and conch shell souvenir
+- Mostly ocean ride (~90% in water, waist-deep)
+- Riders must be at least 5 years old  
+- Weight limit: 220 lbs (225 lbs max internally)
 
 ---
 
-**Important Info:**
+Jet Ski Tour
 
-- 🐎 Riders must be at least 5 years old.  
-- 🏄‍♂️ Jet Ski drivers must be 18+ with a valid license. Kids 6+ can ride with a parent.  
-- 🐴 Riders can’t share a horse. Everyone must ride solo, but guides assist younger riders.  
-- 🚐 Only paying guests are allowed on transport for insurance reasons.
+1-Hour Shipwreck Tour  
+- Schedule: 1:00 PM  
+- Duration: 1 hour  
+- Group Size: Up to 6 participants (max 2 per jet ski)  
+- Rate: $271.91 per jet ski  
+- Public tour only (no private option)  
+- Jet Skis: 3 available for booking + 1 for guide  
+- Location: 13B Gumbo Limbo Drive, 300m ahead at Gate 13B  
+- Requirements:  
+  - Drivers must have a valid license  
+  - Drivers: 18+  
+  - Kids 6+ allowed as passengers with a parent  
+  - Weight limit: 275 lbs per person / 400 lbs combined
+
+Note:  
+- Must book in advance. Same-day bookings only if contacting early (7–9 AM).  
+- Call to check with staff if exceptions are possible.
 
 ---
 
-**Booking and Availability:**
+Safari Tour & Snorkeling
 
-You can help the caller check availability and assist them in booking their spot over the phone.
+Half-Day Safari Tour  
+- Schedule: Monday–Friday at 9:00 AM  
+- Duration: 4 hours  
+- Group Size: Up to 32 people (min 2)  
+- Public Tour only  
+- Age: All ages welcome (infants must be held)  
+- Inclusions: Snacks, drinks, snorkeling gear  
+- Complimentary transportation from selected hotels/resorts  
+- Pick-up locations must be pre-arranged; no villa pick-ups unless for private tour  
+- Itinerary:  
+  1. Tour of Stable Yard & meet the horses  
+  2. Visit the island's highest point  
+  3. Explore Long Bay Hole  
+  4. Snorkel at Smith’s Reef
 
-If the guest wants to speak with someone directly or if you’re not sure how to answer their question, offer to transfer them to:
-- Reservations
-- Billing
-- Technical Support
+Note: Must book in advance—no same-day booking.
 
 ---
 
