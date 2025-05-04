@@ -1,6 +1,7 @@
 import { SDK as RingCentral } from "@ringcentral/sdk";
 import Softphone from "ringcentral-softphone";
 import WebSocket from "ws";
+import { sendGuestInfoEmail } from "../utils/email.js";
 import { CALL_PROMPT } from "./prompts/call-prompt.js";
 
 // Constants
@@ -335,21 +336,74 @@ export class PhoneEngine {
                 {
                   type: "function",
                   name: "end_call",
-                  description: "End the current call when the conversation is complete",
+                  description:
+                    "End the current call when the conversation is complete",
                   parameters: {
                     type: "object",
                     properties: {
                       reason: {
                         type: "string",
-                        description: "The reason for ending the call (e.g., 'conversation_complete', 'customer_request', etc.)"
-                      }
+                        description:
+                          "The reason for ending the call (e.g., 'conversation_complete', 'customer_request', etc.)",
+                      },
                     },
-                    required: ["reason"]
-                  }
-                }
+                    required: ["reason"],
+                  },
+                },
+                {
+                  type: "function",
+                  name: "collect_guest_info",
+                  description:
+                    "Collect guest information for booking and send it via email",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      guestName: {
+                        type: "string",
+                        description: "The full name of the guest",
+                      },
+                      email: {
+                        type: "string",
+                        description: "The guest's email address",
+                      },
+                      phoneNumber: {
+                        type: "string",
+                        description: "The guest's phone number",
+                      },
+                      numberOfAdults: {
+                        type: "string",
+                        description: "The number of adults in the party",
+                      },
+                      numberOfChildren: {
+                        type: "string",
+                        description: "The number of children in the party",
+                      },
+                      dateOfArrival: {
+                        type: "string",
+                        description:
+                          "The date of arrival (format: YYYY-MM-DD or natural language)",
+                      },
+                      timeOfArrival: {
+                        type: "string",
+                        description:
+                          "The time of arrival (format: HH:MM or natural language)",
+                      },
+                      tourType: {
+                        type: "string",
+                        description:
+                          "The type of tour the guest is interested in",
+                      },
+                      notes: {
+                        type: "string",
+                        description: "Any additional notes or special requests",
+                      },
+                    },
+                    required: ["guestName", "phoneNumber", "tourType"],
+                  },
+                },
               ],
-              tool_choice: "auto"
-            }
+              tool_choice: "auto",
+            },
           };
 
           console.log("Sending session update to OpenAI");
@@ -551,42 +605,44 @@ export class PhoneEngine {
           console.log("Function called:", response);
           const functionName = response.name;
           const args = JSON.parse(response.arguments);
-          
+
           if (functionName === "end_call") {
             try {
               console.log(`Call end requested by AI. Reason: ${args.reason}`);
-              
+
               // Send function output back to OpenAI
               const functionOutputEvent = {
                 type: "conversation.item.create",
                 item: {
                   type: "function_call_output",
                   role: "system",
-                  output: "Call will be ended. Sending goodbye message to the caller."
-                }
+                  output:
+                    "Call will be ended. Sending goodbye message to the caller.",
+                },
               };
               openAIWs.send(JSON.stringify(functionOutputEvent));
-              
+
               // Send a goodbye message before ending the call
-              const goodbyeMessage = "Thank you for calling Unique Tours and Rentals. Have a great day!";
+              const goodbyeMessage =
+                "Thank you for calling Unique Tours and Rentals. Have a great day!";
               console.log(`Sending goodbye message: ${goodbyeMessage}`);
-              
+
               // Create a response with the goodbye message
               const finalResponse = {
                 type: "response.create",
                 response: {
                   modalities: ["audio", "text"],
-                  instructions: `Say goodbye to the caller with this message: ${goodbyeMessage}`
-                }
+                  instructions: `Say goodbye to the caller with this message: ${goodbyeMessage}`,
+                },
               };
-              
+
               openAIWs.send(JSON.stringify(finalResponse));
-              
+
               // Wait a moment for the goodbye message to be played
               setTimeout(() => {
                 console.log("Ending call after goodbye message");
                 this.cleanupCall(activeCall);
-                
+
                 // Hang up the call
                 if (activeCall.callSession) {
                   activeCall.callSession.hangup();
@@ -596,13 +652,84 @@ export class PhoneEngine {
             } catch (error) {
               console.error("Error processing end_call function:", error);
             }
+          } else if (functionName === "collect_guest_info") {
+            try {
+              console.log("Guest information collected:", args);
+
+              // Store the guest information in the active call object for reference
+              activeCall.guestInfo = args;
+
+              // Send the email with the guest information
+              sendGuestInfoEmail(args)
+                .then((success) => {
+                  const resultMessage = success
+                    ? "Your booking information has been sent successfully. Our team will contact you soon to confirm your reservation."
+                    : "I've recorded your booking information, but there was an issue sending the email. Don't worry, our team will still receive your request and contact you soon.";
+
+                  // Send function output back to OpenAI
+                  const functionOutputEvent = {
+                    type: "conversation.item.create",
+                    item: {
+                      type: "function_call_output",
+                      role: "system",
+                      output: success
+                        ? "Guest information collected and email sent successfully."
+                        : "Guest information collected but there was an issue sending the email.",
+                    },
+                  };
+                  openAIWs.send(JSON.stringify(functionOutputEvent));
+
+                  // Create a response to inform the caller
+                  const infoResponse = {
+                    type: "response.create",
+                    response: {
+                      modalities: ["audio", "text"],
+                      instructions: `Thank the guest for providing their information and let them know: ${resultMessage}`,
+                    },
+                  };
+
+                  openAIWs.send(JSON.stringify(infoResponse));
+                })
+                .catch((error) => {
+                  console.error("Error in email sending process:", error);
+
+                  // Send function output back to OpenAI
+                  const functionOutputEvent = {
+                    type: "conversation.item.create",
+                    item: {
+                      type: "function_call_output",
+                      role: "system",
+                      output:
+                        "There was an error processing the guest information.",
+                    },
+                  };
+                  openAIWs.send(JSON.stringify(functionOutputEvent));
+
+                  // Create a response to inform the caller of the error
+                  const errorResponse = {
+                    type: "response.create",
+                    response: {
+                      modalities: ["audio", "text"],
+                      instructions:
+                        "Apologize to the guest for the technical issue and assure them that their information has been recorded. Let them know that our team will contact them soon.",
+                    },
+                  };
+
+                  openAIWs.send(JSON.stringify(errorResponse));
+                });
+            } catch (error) {
+              console.error(
+                "Error processing collect_guest_info function:",
+                error
+              );
+            }
           }
         }
 
         // Also handle function calls from OpenAI via tool_calls (alternative event type)
         if (response.type === "response.tool_calls") {
           console.log("Received tool call from OpenAI:", response.tool_calls);
-          
+
           // This is a fallback handler in case the function_call_arguments.done event is not triggered
           // The implementation is similar to the one above
         }
