@@ -355,7 +355,7 @@ export class PhoneEngine {
                   type: "function",
                   name: "collect_guest_info",
                   description:
-                    "Collect guest information for booking and send it via email",
+                    "Collect essential guest information for booking and send it via email",
                   parameters: {
                     type: "object",
                     properties: {
@@ -363,43 +363,22 @@ export class PhoneEngine {
                         type: "string",
                         description: "The full name of the guest",
                       },
-                      email: {
+                      tourType: {
                         type: "string",
-                        description: "The guest's email address",
-                      },
-                      phoneNumber: {
-                        type: "string",
-                        description: "The guest's phone number",
-                      },
-                      numberOfAdults: {
-                        type: "string",
-                        description: "The number of adults in the party",
-                      },
-                      numberOfChildren: {
-                        type: "string",
-                        description: "The number of children in the party",
+                        description:
+                          "The type of tour the guest is interested in",
                       },
                       dateOfArrival: {
                         type: "string",
                         description:
                           "The date of arrival (format: YYYY-MM-DD or natural language)",
                       },
-                      timeOfArrival: {
-                        type: "string",
-                        description:
-                          "The time of arrival (format: HH:MM or natural language)",
-                      },
-                      tourType: {
-                        type: "string",
-                        description:
-                          "The type of tour the guest is interested in",
-                      },
                       notes: {
                         type: "string",
                         description: "Any additional notes or special requests",
                       },
                     },
-                    required: ["guestName", "phoneNumber", "tourType"],
+                    required: ["guestName", "tourType"],
                   },
                 },
               ],
@@ -682,8 +661,15 @@ export class PhoneEngine {
               // Store the guest information in the active call object for reference
               activeCall.guestInfo = args;
 
+              // Add caller's phone number automatically from the call metadata
+              activeCall.guestInfo.phoneNumber = activeCall.fromNumber;
+              console.log(
+                "Added caller's phone number automatically:",
+                activeCall.fromNumber
+              );
+
               // Send the email with the guest information
-              sendGuestInfoEmail(args)
+              sendGuestInfoEmail(activeCall.guestInfo)
                 .then((success) => {
                   const resultMessage = success
                     ? "Your booking information has been sent successfully. Our team will contact you soon to confirm your reservation."

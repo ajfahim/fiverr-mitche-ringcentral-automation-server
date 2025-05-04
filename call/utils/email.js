@@ -25,19 +25,24 @@ export async function sendGuestInfoEmail(guestInfo) {
       Guest Information:
       ------------------
       Name: ${guestInfo.guestName || "Not provided"}
+      Phone Number: ${
+        guestInfo.phoneNumber || "Not provided"
+      } (Automatically captured from caller ID)
       Email: ${guestInfo.email || "Not provided"}
-      Phone Number: ${guestInfo.phoneNumber || "Not provided"}
       
       Booking Details:
       ----------------
-      Number of Adults: ${guestInfo.numberOfAdults || "Not provided"}
-      Number of Children: ${guestInfo.numberOfChildren || "Not provided"}
-      Date of Arrival: ${guestInfo.dateOfArrival || "Not provided"}
-      Time of Arrival: ${guestInfo.timeOfArrival || "Not provided"}
       Type of Tour: ${guestInfo.tourType || "Not provided"}
+      Date of Arrival: ${guestInfo.dateOfArrival || "Not provided"}
       
-      Additional Notes:
-      ----------------
+      Additional Information (if provided):
+      ------------------------------------
+      Number of Adults: ${guestInfo.numberOfAdults || "Not specified"}
+      Number of Children: ${guestInfo.numberOfChildren || "Not specified"}
+      Time of Arrival: ${guestInfo.timeOfArrival || "Not specified"}
+      
+      Notes:
+      ------
       ${guestInfo.notes || "No additional notes provided."}
       
       This information was collected via an automated phone call.
