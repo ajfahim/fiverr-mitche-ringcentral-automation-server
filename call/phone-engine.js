@@ -331,7 +331,25 @@ export class PhoneEngine {
               instructions: CALL_PROMPT,
               modalities: ["text", "audio"],
               temperature: 0.7,
-            },
+              tools: [
+                {
+                  type: "function",
+                  name: "end_call",
+                  description: "End the current call when the conversation is complete",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      reason: {
+                        type: "string",
+                        description: "The reason for ending the call (e.g., 'conversation_complete', 'customer_request', etc.)"
+                      }
+                    },
+                    required: ["reason"]
+                  }
+                }
+              ],
+              tool_choice: "auto"
+            }
           };
 
           console.log("Sending session update to OpenAI");
@@ -526,6 +544,67 @@ export class PhoneEngine {
               this.transferCall(activeCall);
             }, 5000);
           }
+        }
+
+        // Handle function calls from OpenAI
+        if (response.type === "response.function_call_arguments.done") {
+          console.log("Function called:", response);
+          const functionName = response.name;
+          const args = JSON.parse(response.arguments);
+          
+          if (functionName === "end_call") {
+            try {
+              console.log(`Call end requested by AI. Reason: ${args.reason}`);
+              
+              // Send function output back to OpenAI
+              const functionOutputEvent = {
+                type: "conversation.item.create",
+                item: {
+                  type: "function_call_output",
+                  role: "system",
+                  output: "Call will be ended. Sending goodbye message to the caller."
+                }
+              };
+              openAIWs.send(JSON.stringify(functionOutputEvent));
+              
+              // Send a goodbye message before ending the call
+              const goodbyeMessage = "Thank you for calling Unique Tours and Rentals. Have a great day!";
+              console.log(`Sending goodbye message: ${goodbyeMessage}`);
+              
+              // Create a response with the goodbye message
+              const finalResponse = {
+                type: "response.create",
+                response: {
+                  modalities: ["audio", "text"],
+                  instructions: `Say goodbye to the caller with this message: ${goodbyeMessage}`
+                }
+              };
+              
+              openAIWs.send(JSON.stringify(finalResponse));
+              
+              // Wait a moment for the goodbye message to be played
+              setTimeout(() => {
+                console.log("Ending call after goodbye message");
+                this.cleanupCall(activeCall);
+                
+                // Hang up the call
+                if (activeCall.callSession) {
+                  activeCall.callSession.hangup();
+                  console.log(`Call ${activeCall.id} has been hung up by AI`);
+                }
+              }, 5000);
+            } catch (error) {
+              console.error("Error processing end_call function:", error);
+            }
+          }
+        }
+
+        // Also handle function calls from OpenAI via tool_calls (alternative event type)
+        if (response.type === "response.tool_calls") {
+          console.log("Received tool call from OpenAI:", response.tool_calls);
+          
+          // This is a fallback handler in case the function_call_arguments.done event is not triggered
+          // The implementation is similar to the one above
         }
 
         // Handle speech detection events for interruption

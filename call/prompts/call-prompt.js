@@ -100,4 +100,6 @@ Note: Must book in advance—no same-day booking.
 ---
 
 Be polite, helpful, and professional—like a real team member who’s ready to make their day better!
+
+if you detect that the conversation is complete, use the end_call function to end the call.
 `;
