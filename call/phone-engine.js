@@ -1,8 +1,8 @@
 import { SDK as RingCentral } from "@ringcentral/sdk";
 import Softphone from "ringcentral-softphone";
 import WebSocket from "ws";
-import { sendGuestInfoEmail } from "../utils/email.js";
 import { CALL_PROMPT } from "./prompts/call-prompt.js";
+import { sendGuestInfoEmail } from "./utils/email.js";
 
 // Constants
 const OPENAI_VOICE = process.env.OPENAI_VOICE || "alloy";
@@ -267,6 +267,7 @@ export class PhoneEngine {
       telSessionId: null,
       partyId: null,
       isConnected: true,
+      isEnding: false,
     };
 
     this.activeCalls.set(callId, activeCall);
@@ -610,12 +611,34 @@ export class PhoneEngine {
             try {
               console.log(`Call end requested by AI. Reason: ${args.reason}`);
 
+              // Check if call is already in the process of ending
+              if (activeCall.isEnding) {
+                console.log(
+                  `Call ${activeCall.id} is already being ended, ignoring duplicate end request`
+                );
+
+                // Still send the function output to avoid API errors
+                const functionOutputEvent = {
+                  type: "conversation.item.create",
+                  item: {
+                    type: "function_call_output",
+                    call_id: response.call_id,
+                    output: "Call is already in the process of ending.",
+                  },
+                };
+                openAIWs.send(JSON.stringify(functionOutputEvent));
+                return;
+              }
+
+              // Mark call as ending
+              activeCall.isEnding = true;
+
               // Send function output back to OpenAI
               const functionOutputEvent = {
                 type: "conversation.item.create",
                 item: {
                   type: "function_call_output",
-                  role: "system",
+                  call_id: response.call_id,
                   output:
                     "Call will be ended. Sending goodbye message to the caller.",
                 },
@@ -671,7 +694,7 @@ export class PhoneEngine {
                     type: "conversation.item.create",
                     item: {
                       type: "function_call_output",
-                      role: "system",
+                      call_id: response.call_id,
                       output: success
                         ? "Guest information collected and email sent successfully."
                         : "Guest information collected but there was an issue sending the email.",
@@ -689,6 +712,50 @@ export class PhoneEngine {
                   };
 
                   openAIWs.send(JSON.stringify(infoResponse));
+
+                  // Wait a moment for the goodbye message to be played, then end the call
+                  setTimeout(() => {
+                    console.log(
+                      "Ending call after sending booking confirmation"
+                    );
+
+                    // Mark call as ending to avoid double hangup
+                    activeCall.isEnding = true;
+
+                    // Create end call response
+                    const endCallResponse = {
+                      type: "response.create",
+                      response: {
+                        modalities: ["audio", "text"],
+                        instructions:
+                          "Say goodbye and let the caller know you're ending the call after a brief pause.",
+                      },
+                    };
+
+                    openAIWs.send(JSON.stringify(endCallResponse));
+
+                    // Add a delay before hanging up
+                    setTimeout(() => {
+                      console.log("Hanging up call after final message");
+
+                      // Only proceed if call is still active
+                      if (this.activeCalls.has(activeCall.id)) {
+                        this.cleanupCall(activeCall);
+
+                        // Hang up the call
+                        if (activeCall.callSession) {
+                          activeCall.callSession.hangup();
+                          console.log(
+                            `Call ${activeCall.id} has been hung up automatically after booking`
+                          );
+                        }
+                      } else {
+                        console.log(
+                          `Call ${activeCall.id} already ended, skipping automatic hangup`
+                        );
+                      }
+                    }, 10000); // 10 second delay to allow final message to play
+                  }, 5000);
                 })
                 .catch((error) => {
                   console.error("Error in email sending process:", error);
@@ -698,7 +765,7 @@ export class PhoneEngine {
                     type: "conversation.item.create",
                     item: {
                       type: "function_call_output",
-                      role: "system",
+                      call_id: response.call_id,
                       output:
                         "There was an error processing the guest information.",
                     },
@@ -716,6 +783,50 @@ export class PhoneEngine {
                   };
 
                   openAIWs.send(JSON.stringify(errorResponse));
+
+                  // Wait a moment for the error message to be played, then end the call
+                  setTimeout(() => {
+                    console.log(
+                      "Ending call after sending booking error message"
+                    );
+
+                    // Mark call as ending to avoid double hangup
+                    activeCall.isEnding = true;
+
+                    // Create end call response
+                    const endCallResponse = {
+                      type: "response.create",
+                      response: {
+                        modalities: ["audio", "text"],
+                        instructions:
+                          "Say goodbye and let the caller know you're ending the call after a brief pause.",
+                      },
+                    };
+
+                    openAIWs.send(JSON.stringify(endCallResponse));
+
+                    // Add a delay before hanging up
+                    setTimeout(() => {
+                      console.log("Hanging up call after final error message");
+
+                      // Only proceed if call is still active
+                      if (this.activeCalls.has(activeCall.id)) {
+                        this.cleanupCall(activeCall);
+
+                        // Hang up the call
+                        if (activeCall.callSession) {
+                          activeCall.callSession.hangup();
+                          console.log(
+                            `Call ${activeCall.id} has been hung up automatically after booking error`
+                          );
+                        }
+                      } else {
+                        console.log(
+                          `Call ${activeCall.id} already ended, skipping automatic hangup`
+                        );
+                      }
+                    }, 10000); // 10 second delay to allow final message to play
+                  }, 5000);
                 });
             } catch (error) {
               console.error(
@@ -970,6 +1081,14 @@ export class PhoneEngine {
   }
 
   cleanupCall(activeCall) {
+    // If the call is already cleaned up, skip
+    if (!this.activeCalls.has(activeCall.id)) {
+      console.log(
+        `Call ${activeCall.id} is already cleaned up, skipping duplicate cleanup`
+      );
+      return;
+    }
+
     // Close OpenAI WebSocket if it's open
     if (
       activeCall.openAIWs &&
