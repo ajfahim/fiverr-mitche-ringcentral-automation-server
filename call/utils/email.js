@@ -18,32 +18,41 @@ export async function sendGuestInfoEmail(guestInfo) {
       },
     });
 
+    // Remove any placeholder values that might be in the data
+    const cleanGuestInfo = {
+      ...guestInfo,
+      guestName: guestInfo.guestName?.includes('[Your') ? 'Not provided' : (guestInfo.guestName || 'Not provided'),
+      email: guestInfo.email?.includes('[Your') ? 'Not provided' : (guestInfo.email || 'Not provided'),
+    };
+    
     // Format the guest information into a readable email body
     const emailBody = `
       New Booking Inquiry from Phone Call
       
       Guest Information:
       ------------------
-      Name: ${guestInfo.guestName || "Not provided"}
-      Phone Number: ${
-        guestInfo.phoneNumber || "Not provided"
-      } (Automatically captured from caller ID)
-      Email: ${guestInfo.email || "Not provided"}
+      Name of the reservation: ${cleanGuestInfo.guestName}
+      Email: ${cleanGuestInfo.email}
+      Phone number: ${cleanGuestInfo.phoneNumber || "Not provided"} (Automatically captured from caller ID)
       
       Booking Details:
       ----------------
-      Type of Tour: ${guestInfo.tourType || "Not provided"}
-      Date of Arrival: ${guestInfo.dateOfArrival || "Not provided"}
+      Number of guests: ${cleanGuestInfo.numberOfGuests || "Not provided"}
+      Type of Tour: ${cleanGuestInfo.tourType || "Not provided"}
+      Tour Date: ${cleanGuestInfo.tourDate || "Not provided"}
+      Tour Time: ${cleanGuestInfo.tourTime || "Not provided"}
       
-      Additional Information (if provided):
-      ------------------------------------
-      Number of Adults: ${guestInfo.numberOfAdults || "Not specified"}
-      Number of Children: ${guestInfo.numberOfChildren || "Not specified"}
-      Time of Arrival: ${guestInfo.timeOfArrival || "Not specified"}
+      Additional Information:
+      ---------------------
+      Weight of each rider: ${cleanGuestInfo.notes && cleanGuestInfo.notes.includes("weight") ? 
+        cleanGuestInfo.notes.split("\n").find(line => line.toLowerCase().includes("weight")) : "Not provided"}
+      
+      Transportation needed: ${cleanGuestInfo.notes && cleanGuestInfo.notes.includes("transportation") ? 
+        cleanGuestInfo.notes.split("\n").find(line => line.toLowerCase().includes("transportation")) : "Not provided"}
       
       Notes:
       ------
-      ${guestInfo.notes || "No additional notes provided."}
+      ${cleanGuestInfo.notes || "No additional notes provided."}
       
       This information was collected via an automated phone call.
     `;

@@ -21,9 +21,7 @@ const LOG_EVENT_TYPES = [
 
 // Agent information
 const AGENTS = [
-  { name: "Ordering Department", extensionNumber: "102" },
-  { name: "Billing Department", extensionNumber: "103" },
-  { name: "Technical Support", extensionNumber: "104" },
+  { name: "Reservation Team", extensionNumber: "103" },
 ];
 
 // Blocked numbers (optional)
@@ -361,24 +359,52 @@ export class PhoneEngine {
                     properties: {
                       guestName: {
                         type: "string",
-                        description: "The full name of the guest",
+                        description: "The full name of the guest for the reservation",
+                      },
+                      email: {
+                        type: "string",
+                        description: "The guest's email address",
                       },
                       tourType: {
                         type: "string",
                         description:
-                          "The type of tour the guest is interested in",
+                          "The specific type of tour the guest is interested in",
                       },
-                      dateOfArrival: {
+                      tourDate: {
                         type: "string",
                         description:
-                          "The date of arrival (format: YYYY-MM-DD or natural language)",
+                          "The date of the tour (format: YYYY-MM-DD or natural language)",
+                      },
+                      tourTime: {
+                        type: "string",
+                        description: "The time of the tour (e.g., '9:00 AM', 'afternoon', etc.)",
+                      },
+                      numberOfGuests: {
+                        type: "integer",
+                        description: "Total number of guests in the party",
                       },
                       notes: {
                         type: "string",
-                        description: "Any additional notes or special requests",
+                        description: "Additional information including: breakdown of adults/children, weight of riders (for horseback tours), transportation needs and hotel name, special requests",
                       },
                     },
-                    required: ["guestName", "tourType"],
+                    required: ["guestName", "email", "tourType", "tourDate", "tourTime", "numberOfGuests"],
+                  },
+                },
+                {
+                  type: "function",
+                  name: "transfer_call",
+                  description:
+                    "Transfer the call to a human agent. Use this when caller requests to speak to an agent or when you cannot answer their questions.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      reason: {
+                        type: "string",
+                        description: "The reason for transferring the call, e.g. 'customer request', 'complex inquiry', etc.",
+                      },
+                    },
+                    required: ["reason"],
                   },
                 },
               ],
@@ -458,7 +484,7 @@ export class PhoneEngine {
                       content: [
                         {
                           type: "input_text",
-                          text: "Hi",
+                          text: "Repeat this: Hello, welcome to Unique Tours and Rentals. How can I help you today? At any point if you are not satisfied with the service, please press '0' to speak to another agent.",
                         },
                       ],
                     },
@@ -654,22 +680,69 @@ export class PhoneEngine {
             } catch (error) {
               console.error("Error processing end_call function:", error);
             }
+          } else if (functionName === "transfer_call") {
+            try {
+              console.log("Call transfer requested by AI:", args.reason);
+              
+              // Set transfer properties
+              activeCall.transferRequested = true;
+              activeCall.transferTarget = AGENTS[0]; // Use the Reservation Team
+              
+              // Send function output back to OpenAI
+              const functionOutputEvent = {
+                type: "conversation.item.create",
+                item: {
+                  type: "function_call_output",
+                  call_id: response.call_id,
+                  output: `Transfer initiated to ${AGENTS[0].name} (Extension ${AGENTS[0].extensionNumber})`,
+                },
+              };
+              openAIWs.send(JSON.stringify(functionOutputEvent));
+              
+              // Create a response to inform the caller
+              const transferResponse = {
+                type: "response.create",
+                response: {
+                  modalities: ["audio", "text"],
+                  instructions: `Inform the caller that you'll be transferring them to our ${AGENTS[0].name}. Be polite and professional.`,
+                },
+              };
+              
+              openAIWs.send(JSON.stringify(transferResponse));
+              
+              // Wait for the goodbye message to be played, then transfer the call
+              setTimeout(() => {
+                console.log("Transferring call after AI request");
+                this.transferCall(activeCall);
+              }, 5000); // Wait 5 seconds before transferring
+              
+            } catch (error) {
+              console.error("Error processing transfer_call function:", error);
+            }
           } else if (functionName === "collect_guest_info") {
             try {
               console.log("Guest information collected:", args);
 
-              // Store the guest information in the active call object for reference
-              activeCall.guestInfo = args;
+              // Format the data with all required fields
+              const formattedInfo = {
+                guestName: args.guestName || 'Not provided',
+                email: args.email || 'Not provided',
+                phoneNumber: activeCall.fromNumber, // Add phone number automatically from call data
+                tourType: args.tourType || 'Not provided',
+                tourDate: args.tourDate || 'Not provided',
+                tourTime: args.tourTime || 'Not provided',
+                numberOfGuests: args.numberOfGuests || 'Not provided',
+                notes: args.notes || 'None provided'
+              };
 
-              // Add caller's phone number automatically from the call metadata
-              activeCall.guestInfo.phoneNumber = activeCall.fromNumber;
-              console.log(
-                "Added caller's phone number automatically:",
-                activeCall.fromNumber
-              );
+              // Store the formatted guest information in the active call object
+              activeCall.guestInfo = formattedInfo;
+              
+              console.log("Formatted guest information:", formattedInfo);
+              console.log("Phone number added automatically:", activeCall.fromNumber);
 
-              // Send the email with the guest information
-              sendGuestInfoEmail(activeCall.guestInfo)
+              // Send the email with the complete guest information
+              sendGuestInfoEmail(formattedInfo)
                 .then((success) => {
                   const resultMessage = success
                     ? "Your booking information has been sent successfully. Our team will contact you soon to confirm your reservation."
@@ -923,11 +996,11 @@ export class PhoneEngine {
     // Handle DTMF tones (0-9, *, #)
     console.log(`Processing DTMF: ${digit} for call ${activeCall.id}`);
 
-    // Example: Transfer call if # is pressed
-    if (digit === "#") {
-      console.log("Transfer requested via DTMF");
+    // Transfer call if 0 is pressed
+    if (digit === "0") {
+      console.log("Transfer to Reservation Team requested via DTMF");
       activeCall.transferRequested = true;
-      activeCall.transferTarget = AGENTS[0]; // Default to first agent
+      activeCall.transferTarget = AGENTS[0]; // Reservation Team
       this.transferCall(activeCall);
     }
   }
@@ -950,25 +1023,7 @@ export class PhoneEngine {
   }
 
   determineTransferTarget(text) {
-    // Determine which department to transfer to based on the text
-    if (
-      text.toLowerCase().includes("order") ||
-      text.toLowerCase().includes("booking")
-    ) {
-      return AGENTS.find((agent) => agent.name.includes("Ordering"));
-    } else if (
-      text.toLowerCase().includes("bill") ||
-      text.toLowerCase().includes("payment")
-    ) {
-      return AGENTS.find((agent) => agent.name.includes("Billing"));
-    } else if (
-      text.toLowerCase().includes("technical") ||
-      text.toLowerCase().includes("support")
-    ) {
-      return AGENTS.find((agent) => agent.name.includes("Technical"));
-    }
-
-    // Default to the first agent if no match
+    // With only one human agent, always return that agent
     return AGENTS[0];
   }
 
