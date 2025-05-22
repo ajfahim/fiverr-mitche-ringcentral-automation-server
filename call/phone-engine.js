@@ -4,6 +4,8 @@ import WebSocket from "ws";
 import { CALL_PROMPT } from "./prompts/call-prompt.js";
 import { sendGuestInfoEmail } from "./utils/email.js";
 
+console.log("prompt: ", CALL_PROMPT);
+
 // Constants
 const OPENAI_VOICE = process.env.OPENAI_VOICE || "alloy";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
