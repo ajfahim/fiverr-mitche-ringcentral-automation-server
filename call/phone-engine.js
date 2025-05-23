@@ -318,11 +318,11 @@ export class PhoneEngine {
             session: {
               turn_detection: {
                 type: "server_vad",
-                threshold: 0.5, // Default sensitivity (0-1)
-                prefix_padding_ms: 100, // Reduced from 300 for faster response
-                silence_duration_ms: 100, // Reduced from 200 to detect silence faster
-                create_response: true, // Create a response after detecting speech
-                interrupt_response: true, // Allow interrupting the assistant response
+                // threshold: 0.5, // Default sensitivity (0-1)
+                // prefix_padding_ms: 100, // Reduced from 300 for faster response
+                // silence_duration_ms: 100, // Reduced from 200 to detect silence faster
+                // create_response: true, // Create a response after detecting speech
+                // interrupt_response: true, // Allow interrupting the assistant response
               },
               input_audio_format: "g711_ulaw",
               output_audio_format: "g711_ulaw",
