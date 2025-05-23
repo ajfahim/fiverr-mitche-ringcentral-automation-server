@@ -756,6 +756,7 @@ export class PhoneEngine {
                     item: {
                       type: "function_call_output",
                       call_id: response.call_id,
+                      role:"system",
                       output: success
                         ? "Guest information collected and email sent successfully."
                         : "Guest information collected but there was an issue sending the email.",
