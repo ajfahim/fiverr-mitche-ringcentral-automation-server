@@ -316,14 +316,14 @@ export class PhoneEngine {
           const sessionUpdate = {
             type: "session.update",
             session: {
-              turn_detection: {
-                type: "server_vad",
-                // threshold: 0.5, // Default sensitivity (0-1)
-                // prefix_padding_ms: 100, // Reduced from 300 for faster response
-                // silence_duration_ms: 100, // Reduced from 200 to detect silence faster
-                // create_response: true, // Create a response after detecting speech
-                // interrupt_response: true, // Allow interrupting the assistant response
-              },
+              "turn_detection": {
+              "type": "server_vad",
+                "threshold": 0.5,
+                "prefix_padding_ms": 300,
+                "silence_duration_ms": 500,
+                "create_response": true, // only in conversation mode
+                "interrupt_response": true, // only in conversation mode
+              },  
               input_audio_format: "g711_ulaw",
               output_audio_format: "g711_ulaw",
               input_audio_transcription: {
@@ -597,15 +597,15 @@ export class PhoneEngine {
           console.log("==============AI==============: ", response.transcript);
           // Check for transfer requests in the text
           const text = response.transcript;
-          if (!activeCall.transferRequested && this.shouldTransferCall(text)) {
-            activeCall.transferRequested = true;
-            activeCall.transferTarget = this.determineTransferTarget(text);
+          // // if (!activeCall.transferRequested && this.shouldTransferCall(text)) {
+          // //   activeCall.transferRequested = true;
+          // //   activeCall.transferTarget = this.determineTransferTarget(text);
 
-            // Initiate transfer after a short delay
-            setTimeout(() => {
-              this.transferCall(activeCall);
-            }, 5000);
-          }
+          // //   // Initiate transfer after a short delay
+          // //   setTimeout(() => {
+          // //     this.transferCall(activeCall);
+          // //   }, 5000);
+          // }
         }
 
         // Handle function calls from OpenAI
