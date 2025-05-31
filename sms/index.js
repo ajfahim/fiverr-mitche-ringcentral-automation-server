@@ -5,6 +5,8 @@ const Subscriptions = require("@ringcentral/subscriptions").Subscriptions;
 const { SMS_PROMPT } = require("./sms-prompt");
 const { OpenAI } = require("openai");
 
+console.log("prompt: ", SMS_PROMPT);
+
 // Validate environment variables
 const requiredEnvVars = {
   RINGCENTRAL_CLIENT_ID: process.env.RINGCENTRAL_CLIENT_ID,
@@ -123,12 +125,17 @@ async function send_reply(body) {
 
   const prompt = SMS_PROMPT;
   const aiResponse = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo", // Change to GPT-3.5 Turbo to reduce cost
+    model: "gpt-4.1-mini",
+    response_format: {
+      type: "text",
+    },
+    temperature: 1.00,
+    top_p: 1,
     messages: [
       { role: "system", content: prompt },
       { role: "user", content: body.subject },
     ],
-    // max_tokens: 100, // Limit response length to control cost
+    max_tokens: 2048,
     temperature: 0.7,
   });
   console.log(aiResponse.choices[0]);

@@ -282,7 +282,7 @@ export class PhoneEngine {
     console.log("Setting up OpenAI Realtime connection...");
     // Create WebSocket connection to OpenAI
     const openAIWs = new WebSocket(
-      "wss://api.openai.com/v1/realtime?model=gpt-4o-mini-realtime-preview-2024-12-17",
+      "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17",
       {
         headers: {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
@@ -332,7 +332,7 @@ export class PhoneEngine {
               voice: OPENAI_VOICE,
               instructions: CALL_PROMPT,
               modalities: ["text", "audio"],
-              temperature: 0.7,
+              temperature: 0.6,
               tools: [
                 {
                   type: "function",
@@ -353,9 +353,10 @@ export class PhoneEngine {
                 },
                 {
                   type: "function",
-                  name: "collect_guest_info",
+                  name: "collect_guest_info_send_email",
                   description:
                     "Collect essential guest information for booking and send it via email",
+                 
                   parameters: {
                     type: "object",
                     properties: {
@@ -375,11 +376,11 @@ export class PhoneEngine {
                       tourDate: {
                         type: "string",
                         description:
-                          "The date of the tour (format: YYYY-MM-DD or natural language)",
+                          "The date of the tour (format: YYYY-MM-DD)",
                       },
                       tourTime: {
                         type: "string",
-                        description: "The time of the tour (e.g., '9:00 AM', 'afternoon', etc.)",
+                        description: "The time of the tour (e.g., '9:00 AM')",
                       },
                       numberOfGuests: {
                         type: "integer",
@@ -390,7 +391,7 @@ export class PhoneEngine {
                         description: "Additional information including: breakdown of adults/children, weight of riders (for horseback tours), transportation needs and hotel name, special requests",
                       },
                     },
-                    required: ["guestName", "email", "tourType", "tourDate", "tourTime", "numberOfGuests"],
+                    required: ["guestName", "email", "tourType", "tourDate", "tourTime", "numberOfGuests", "notes"],
                   },
                 },
                 {
@@ -398,6 +399,7 @@ export class PhoneEngine {
                   name: "transfer_call",
                   description:
                     "Transfer the call to a human agent. Use this when caller requests to speak to an agent or when you cannot answer their questions.",
+                  
                   parameters: {
                     type: "object",
                     properties: {
@@ -721,7 +723,7 @@ export class PhoneEngine {
             } catch (error) {
               console.error("Error processing transfer_call function:", error);
             }
-          } else if (functionName === "collect_guest_info") {
+          } else if (functionName === "collect_guest_info_send_email") {
             try {
               console.log("Guest information collected:", args);
 
@@ -892,7 +894,7 @@ export class PhoneEngine {
                 });
             } catch (error) {
               console.error(
-                "Error processing collect_guest_info function:",
+                "Error processing collect_guest_info_send_email function:",
                 error
               );
             }
