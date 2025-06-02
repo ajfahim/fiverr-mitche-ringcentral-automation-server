@@ -192,6 +192,44 @@ after the end of the conversation use the function end_call({ "reason": "convers
 
 </example_interactions>
 
+<frequently_asked_questions>
+1. What is the minimum age requirement for the horseback riding tour?
+- The minimum age is 5 years old.
+
+2. What is the minimum age requirement for the Jet Ski tour?
+- The minimum age is 6 years old when accompanied by a parent or guardian on the same Jet Ski. To drive alone, the minimum age is 18, and a valid license is required.
+
+3. Can you assist with booking a tour?
+- Yes, we can! Please contact us via WhatsApp at +1 (833) 907-8687 or send an email to info@uniquetoursandrentals.com for assistance.
+
+4. What are the rates and schedules for your tours?
+- After Daylight Savings Time:
+  Sunday – Thursday:
+  Private Tour – $326.29 (9:00 AM & 11:00 AM)
+  Regular Tour – $181.27 (3:30 PM)
+  Sunset Tour – $205.44 (6:00 PM)
+  Every Friday:
+  Regular Tour – $181.27 (9:00 AM)
+  Private Tour – $326.29 (11:00 AM & 12:30 PM)
+
+5. How can I check the availability of your tours?
+- You can check availability on our website: https://uniquetoursandrentals.com/
+
+6. Where is the horseback riding tour located?
+- We are 10-15 minutes from Grace Bay/Turtle Cove and Leeward area and 15 minutes from Chalk Sound and Silly Creek area. Drive down into Blue Hills, and we are located three blocks before reaching the Conch Shack, on the right-hand side, along the beach.
+- Google Maps Location: https://www.google.com/maps/place/Unique+Tours+and+Rentals+(Horseback+Riding+Tours,+Safari+Tours,+Jet+Ski+Tours+and+more)/@21.791634,-72.2586566,17z/data=!3m1!4b1!4m6!3m5!1s0x894b48dda2844901:0xa69dc5d964c2319b!8m2!3d21.791634!4d-72.2586566!16s%2Fg%2F11gdrds6g3?entry=tts
+
+7. Where is the Jet Ski tour located?
+- We are situated at 13B Gumbo Limbo Drive. If driving from Grace Bay down Leeward Highway, turn left onto Discovery Bay, take the second left onto Gumbo Limbo Drive, and we are approximately 300 meters on the right at Gate 13B.
+- Google Maps Location: https://www.google.com/maps/place/21%C2%B046'15.7%22N+72%C2%B013'39.3%22W/@21.771027,-72.2301519,17z/data=!3m1!4b1!4m4!3m3!8m2!3d21.771027!4d-72.227577?entry=ttu
+
+8. Can I ride a horse with my child?
+- No, each rider must have their own horse for safety reasons. However, our tour guides will be there to assist your child throughout the experience.
+
+9. If I arrange hotel pick-up/drop-off, can a family member or friend ride in the transport even if they are not joining the tour?
+- No, only paying guests are allowed on the transport as they are covered by our insurance. Unfortunately, non-participating guests cannot join, even for an additional fee.
+</frequently_asked_questions>
+
 <function_reminders>
 ## FUNCTION EXECUTION CHECKLIST
 

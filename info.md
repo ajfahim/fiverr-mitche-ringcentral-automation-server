@@ -50,15 +50,17 @@
 - **Minimum Age:** 5 years (can ride alone)  
 - **Ride Conditions:**
   - 90% of the tour is in the ocean
-  - Water depth up to waist level  
+  - Water depth up to waist level
+  - Each rider requires their own horse (cannot ride with a child)  
 - **Tour Inclusions:**
   - Transportation (for selected hotels/resorts)
   - Conch shell souvenir
   - Water  
 - **Booking Options:**
   - Website: [Book Online](https://uniquetoursandrentals.com/category/horseback-riding-turks-and-caicos/)
+  - Check Availability: [Website](https://uniquetoursandrentals.com/)
   - Manual Booking: Contact Reservations  
-    - Phone: 1-833-907-8687  
+    - Phone/WhatsApp: +1 (833) 907-8687  
     - Email: info@uniquetoursandrentals.com
 - **Cancellation Policy:**
   - 72+ hours: Full refund  
@@ -80,6 +82,7 @@
   - 10–15 minutes from Grace Bay, Turtle Cove, and Leeward  
   - 15 minutes from Chalk Sound and Silly Creek  
   - Located in Blue Hills, 3 blocks before the Conch Shack (right-hand side on the beach)
+  - [Google Maps Location](https://www.google.com/maps/place/Unique+Tours+and+Rentals+(Horseback+Riding+Tours,+Safari+Tours,+Jet+Ski+Tours+and+more)/@21.791634,-72.2586566,17z/data=!3m1!4b1!4m6!3m5!1s0x894b48dda2844901:0xa69dc5d964c2319b!8m2!3d21.791634!4d-72.2586566!16s%2Fg%2F11gdrds6g3?entry=tts)
 
 ---
 
@@ -108,6 +111,7 @@
 ### Jet Ski Location
 - **Address:** 13B Gumbo Limbo Drive  
   - From Grace Bay: Drive down Leeward Highway → Left into Discovery Bay → Left on Gumbo Limbo Drive → 300 meters on right → Gate 13B  
+  - [Google Maps Location](https://www.google.com/maps/place/21%C2%B046'15.7%22N+72%C2%B013'39.3%22W/@21.771027,-72.2301519,17z/data=!3m1!4b1!4m4!3m3!8m2!3d21.771027!4d-72.227577?entry=ttu)
 
 ---
 
@@ -115,18 +119,27 @@
 
 ## Half Day Safari Tour
 - **Duration:** 4 hours  
-- **Group Size:** Up to 32 pax (Public tour)  
+- **Group Size:** 32 pax  
 - **Schedule:** Monday to Friday – 9:00 AM only  
 - **Minimum:** 2 pax (1 adult + 1 child or 2 adults)  
-- **Age:** All ages welcome (infants must be held)  
-- **Rate:** Not specified  
+- **Age:** All ages welcome (infants must be held by parents)  
 - **Inclusions:**  
   - Complimentary snacks & beverages  
   - Snorkeling equipment  
-  - Transportation (from selected hotels/resorts)  
-- **Booking:** Advance booking only – no same-day bookings  
-- **Villa Guests:** Must contact by email for nearby pick-up points  
+- **Transportation:** Pick up from selected Hotels and Resorts and drop off is complimentary  
+  - Must be pre-arranged/chosen when making a reservation  
+  - Villa guests are not picked up unless booked for a Private Tour  
+  - Villa guests should contact by email for the nearest pick-up location  
 - [Pick-up Info](https://uniquetoursandrentals.com/safari-pick-up/)  
+- **Prices:**  
+  - 1 child, 1 adult:  
+    - Subtotal: $225.00  
+    - Booking Fee: $46.91  
+    - Total including fee: $271.91  
+  - 2 adults ($180.27 per person):  
+    - Subtotal: $300.00  
+    - Booking Fee: $62.54  
+    - Total including fee: $362.54  
 
 ---
 
