@@ -48,6 +48,22 @@
 
 ---
 
+## Sunrise Horseback Riding and Island Safari Tour & Snorkelling
+
+- **Duration:** 3 hours
+  - 30-minute Sunrise Horseback Riding experience on the pristine beaches
+  - 2.5-hour Island Safari Tour and Snorkelling expedition
+- **Group Size:**
+  - Minimum: 2 people/pax per tour
+  - Maximum: 13 people/pax
+- **Schedule:**
+  - Sunday to Friday
+  - 6:00 AM EST
+- **Rate:** $362.54 (including fees)
+- **Link:** https://uniquetoursandrentals.com/product/sunrise-horseback-riding-and-island-safari-tour-snorkelling/
+
+---
+
 ### General Horseback Riding Information
 
 - **Weight Limit:** 220 lbs (Internal extended limit: 225 lbs)
@@ -91,22 +107,6 @@
   - 15 minutes from Chalk Sound and Silly Creek
   - Located in Blue Hills, 3 blocks before the Conch Shack (right-hand side on the beach)
   - [Google Maps Location](<https://www.google.com/maps/place/Unique+Tours+and+Rentals+(Horseback+Riding+Tours,+Safari+Tours,+Jet+Ski+Tours+and+more)/@21.791634,-72.2586566,17z/data=!3m1!4b1!4m6!3m5!1s0x894b48dda2844901:0xa69dc5d964c2319b!8m2!3d21.791634!4d-72.2586566!16s%2Fg%2F11gdrds6g3?entry=tts>)
-
----
-
-## Sunrise Horseback Riding and Island Safari Tour & Snorkelling
-
-- **Duration:** 3 hours
-  - 30-minute Sunrise Horseback Riding experience on the pristine beaches
-  - 2.5-hour Island Safari Tour and Snorkelling expedition
-- **Group Size:**
-  - Minimum: 2 people/pax per tour
-  - Maximum: 13 people/pax
-- **Schedule:**
-  - Sunday to Friday
-  - 6:00 AM EST
-- **Rate:** $362.54 (including fees)
-- **Link:** https://uniquetoursandrentals.com/product/sunrise-horseback-riding-and-island-safari-tour-snorkelling/
 
 ---
 
