@@ -1,8 +1,0 @@
-guest name
-email
-phone number
-number of adults
-number of children
-date of arrival
-time of arrival
-type of tour
