@@ -1,11 +1,11 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Get the directory name correctly in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '../../');
+const projectRoot = path.resolve(__dirname, "../../");
 
 // Format current date and time
 const currentDate = new Date().toLocaleDateString("en-US", {
@@ -22,7 +22,10 @@ const currentTime = new Date().toLocaleTimeString("en-US", {
 });
 
 // Read knowledge base
-const knowledgeBase = fs.readFileSync(path.join(projectRoot, "info.md"), 'utf8');
+const knowledgeBase = fs.readFileSync(
+  path.join(projectRoot, "info.md"),
+  "utf8"
+);
 
 export const CALL_PROMPT = `
 <goal>
@@ -77,9 +80,13 @@ ${knowledgeBase}
 8. Transportation needs (hotel/resort name)
 
 ### Time Validation
-- Horseback: Private (9am/11am Sun–Thu, 11am/12:30pm Fri), Regular (2pm/3:30pm), Sunset (4:30pm/6pm, no Fri)
-- Jet Ski: 1:00 PM only
-- Safari: 9:00 AM only (Mon–Fri)
+- **IMPORTANT:** We are closed on Saturdays
+- Horseback: 
+  - Private: 9am/11am Sun–Thu, 11am/12:30pm Fri
+  - Regular: 2pm/3:30pm Sun–Thu, 9am Fri
+  - Sunset: 4:30pm/6pm Sun–Thu (No Sunset tours on Fridays)
+- Jet Ski: 1:00 PM only (Sunday–Friday)
+- Safari: 9:00 AM only (Monday–Friday)
 - Suggest alternatives for unavailable times
 
 ### Weight Validation (Horseback Only)

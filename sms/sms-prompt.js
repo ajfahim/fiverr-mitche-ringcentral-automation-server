@@ -1,14 +1,17 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // ESM path helpers
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '../');
+const projectRoot = path.resolve(__dirname, "../");
 
 // Load knowledge base
-const knowledgeBase = fs.readFileSync(path.join(projectRoot, 'info.md'), 'utf8');
+const knowledgeBase = fs.readFileSync(
+  path.join(projectRoot, "info.md"),
+  "utf8"
+);
 
 export const SMS_PROMPT = `
 <goal>
@@ -61,14 +64,21 @@ ${knowledgeBase}
 - Yes, we can! Please contact us via WhatsApp at +1 (833) 907-8687 or send an email to info@uniquetoursandrentals.com for assistance.
 
 4. What are the rates and schedules for your tours?
+- **IMPORTANT:** We are closed on Saturdays
 - After Daylight Savings Time:
-  Sunday – Thursday:
-  Private Tour – $326.29 (9:00 AM & 11:00 AM)
-  Regular Tour – $181.27 (3:30 PM)
-  Sunset Tour – $205.44 (6:00 PM)
-  Every Friday:
-  Regular Tour – $181.27 (9:00 AM)
-  Private Tour – $326.29 (11:00 AM & 12:30 PM)
+  **Sunday – Thursday:**
+  - Private Tour – $326.29 (9:00 AM & 11:00 AM)
+  - Regular Tour – $181.27 (3:30 PM)
+  - Sunset Tour – $205.44 (6:00 PM)
+  
+  **Friday:**
+  - Regular Tour – $181.27 (9:00 AM)
+  - Private Tour – $326.29 (11:00 AM & 12:30 PM)
+  
+  **Saturday:** Closed
+
+- **Jet Ski Tours:** 1:00 PM only (Sunday–Friday)
+- **Safari Tours:** 9:00 AM only (Monday–Friday)
 
 5. How can I check the availability of your tours?
 - You can check availability on our website: https://uniquetoursandrentals.com/
